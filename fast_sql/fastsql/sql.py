@@ -112,7 +112,7 @@ class Read_sql:
         self.count = self.get_query_count(con, sql)
         self.chunksize = self.count // self.thread_num // 2
         # self.tqdm = tqdm(total=self.count,desc='Read the schedule',ncols=100)
-        self.tqdm_init(self.count, desc='read the schedule', weight=100)
+        self.tqdm_init(self.count, desc='read the schedule', weight=80)
 
         if 'order' in sql.lower():
             buf = sql.split('order')
@@ -250,7 +250,7 @@ class to_sql(Read_sql):
 
         if self.avg_list is None:
             con = self.db_pool.get_db()
-            self.tqdm_w = tqdm(total=1, desc='write db scheuler', ncols=100)
+            self.tqdm_w = tqdm(total=1, desc='write db scheuler', ncols=80)
             df = pd.read_sql(self.sql, con, **self.pd_params)
             file_path = os.path.join(self.dir_path, f'{uuid.uuid1()}.pkl')
             df.to_pickle(file_path)
@@ -269,7 +269,7 @@ class to_sql(Read_sql):
             self.tqdm_w = tqdm(
                 total=self.task_count,
                 desc='Rsycn the Schedule',
-                ncols=100)
+                ncols=80)
             if self.mode in ('wr', 'rw'):
                 _pool = ThreadPoolExecutor(max_workers=5)
                 p = [pool.submit(self.write_db) for i in range(5)]
@@ -307,7 +307,7 @@ class to_sql(Read_sql):
         self.tqdm_w = tqdm(
             total=self.task_count,
             desc='Rsycn the Schedule',
-            ncols=100)
+            ncols=80)
         T = ThreadPoolExecutor(max_workers=5)
         put_list = [self.queue.put(path) for path in file_list]
         task_list = [T.submit(self.write_db) for i in put_list]
