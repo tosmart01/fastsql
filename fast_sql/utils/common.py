@@ -75,7 +75,6 @@ class DB_Pool:
 
         elif 'mysql' in con.driver:
             _url = con.url.__dict__
-            print(_url)
             db_engine = {
                 "user": _url.get('username'),
                 "password": _url.get("password_original"),

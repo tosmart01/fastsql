@@ -1,6 +1,7 @@
 import os
 import uuid
 import re
+import time
 import threading
 import shutil
 import pandas as pd
@@ -20,7 +21,9 @@ class Read_sql:
             thread_num=None,
             encoding='utf8',
             show_progress=False):
-        self.db_pool = DB_Pool(con, num=thread_num + 2, encoding=encoding)
+        if con is not None:
+            self.db_pool = DB_Pool(con, num=thread_num + 2, encoding=encoding)
+            self.driver = self.db_pool.driver
         self.sql = sql.strip().replace('\n', ' ')
         self.thread_num = thread_num
         self.avg_list = None
@@ -31,7 +34,6 @@ class Read_sql:
         self.show_progress = show_progress
         self.progress = None
         self.queue = Queue()
-        self.driver = self.db_pool.driver
         self.count = None
         self.tqdm = None
         self.chunksize = None
@@ -40,11 +42,12 @@ class Read_sql:
     def read_sql(self, **kwargs):
         con = self.db_pool.get_db()
         self.pd_params = kwargs
-        self.avg_list = self.verify_sql(con)
+        self.avg_list = self.verify_sql()
+        self.tqdm_init(self.count, desc='Write_csv the scheduler', weight=85)
         if self.avg_list is None:
             result = pd.read_sql(self.sql, con, **self.pd_params)
             result.columns = [i.lower() for i in result.columns.tolist()]
-            self.tqdm_update()
+            self.tqdm_update(self.count)
         else:
             pool = self.start_thread_read()
             pool.shutdown(wait=True)
@@ -62,20 +65,24 @@ class Read_sql:
         self.result.clear()
         return result
 
-    def tqdm_update(self, count=None):
+    def tqdm_update(self, count=None,mode=None):
+        tqdm = self.tqdm if mode is None  else self.tqdm_w
         if self.show_progress:
             if count:
-                self.tqdm.update(count)
+                tqdm.update(count)
 
-            elif self.tqdm.n + self.chunksize < self.count:
-                self.tqdm.update(self.chunksize)
+            elif tqdm.n + self.chunksize < self.count:
+                tqdm.update(self.chunksize)
 
             else:
-                self.tqdm.update(self.count - self.tqdm.n)
+                tqdm.update(self.count - tqdm.n)
 
-    def tqdm_init(self, count, desc, weight):
+    def tqdm_init(self, count, desc, weight,mode=None):
         if self.show_progress:
-            self.tqdm = tqdm(total=count, desc=desc, ncols=weight)
+            if mode is None:
+                self.tqdm = tqdm(total=count, desc=desc, ncols=weight)
+            else:
+                self.tqdm_w = tqdm(total=count, desc=desc, ncols=weight)
 
     @collection_error
     def get_sql_query(self, st, en, *args, **kwargs):
@@ -107,12 +114,12 @@ class Read_sql:
                      for st, en in self.avg_list]
         return pool
 
-    def verify_sql(self, con):
+    def verify_sql(self):
+        con = self.db_pool.get_db()
         sql = self.sql.lower()
         self.count = self.get_query_count(con, sql)
         self.chunksize = self.count // self.thread_num // 2
-        # self.tqdm = tqdm(total=self.count,desc='Read the schedule',ncols=100)
-        self.tqdm_init(self.count, desc='read the schedule', weight=80)
+        # self.tqdm_init(self.count, desc='Read the scheduler', weight=85)
 
         if 'order' in sql.lower():
             buf = sql.split('order')
@@ -137,6 +144,7 @@ class Read_sql:
             avg_list = [(self.chunksize * i, self.chunksize)
                         for i in range(0, self.count // self.chunksize + 1)]
 
+        self.db_pool.close_db(con)
         return avg_list
 
     def get_query_count(self, con, sql):
@@ -179,10 +187,11 @@ class to_csv(Read_sql):
         self.kwargs.pop('mode')
         self.kwargs.pop('chunksize')
         self.pd_params = {'columns': None}
-        self.avg_list = self.verify_sql(con)
+        self.avg_list = self.verify_sql()
+        self.tqdm_init(self.count, desc='write_csv the scheduler', weight=85)
         if self.avg_list is None:
             pd.read_sql(self.sql, con).to_csv(*args, **kwargs)
-            self.tqdm_update()
+            self.tqdm_update(self.count)
         else:
             df = pd.read_sql(self.write_csv_header(),con)
             # df = next(pd.read_sql(self.sql, con, chunksize=1)).iloc[1:, ]
@@ -219,13 +228,15 @@ class to_sql(Read_sql):
         self.mode = kwargs.pop('mode').lower()
         self.file_path = kwargs.pop('file_path')
         self.delete_cache = kwargs.pop('delete_cache')
+        self.save_path = kwargs.pop('save_path',None)
         self.dir_path = None
         self.task_count = None
         self.execute_count = 0
         super().__init__(*args, **kwargs)
-        self.to_db = DB_Pool(to_db, num=8, encoding=kwargs.get('encoding'))
+        if to_db is not None:
+            self.to_db = DB_Pool(to_db, num=8, encoding=kwargs.get('encoding'))
+            self.write_driver = self.to_db.driver
         self.lock_b = threading.Lock()
-        self.write_driver = self.to_db.driver
         self.execute_pool = None
 
     def delete_table(self):
@@ -244,33 +255,33 @@ class to_sql(Read_sql):
 
 
     def decision(self):
-        self.dir_path = os.path.join(os.getcwd(),f'{uuid.uuid1()}){self.to_table}')
-        os.mkdir(self.dir_path)
+        if self.save_path is None:
+            self.dir_path = os.path.join(os.getcwd(),f'{uuid.uuid1()}){self.to_table}')
+            os.mkdir(self.dir_path)
+        else:
+            self.dir_path = self.save_path
         self.file_path = self.dir_path
 
         if self.avg_list is None:
             con = self.db_pool.get_db()
-            self.tqdm_w = tqdm(total=1, desc='write db scheuler', ncols=80)
             df = pd.read_sql(self.sql, con, **self.pd_params)
             file_path = os.path.join(self.dir_path, f'{uuid.uuid1()}.pkl')
             df.to_pickle(file_path)
             if self.mode in ('wr', 'rw'):
                 self.task_count = 1
+                self.tqdm_init(self.task_count, desc='Write the scheduler', weight=85, mode=True)
                 self.queue.put(file_path)
                 self.write_db()
             else:
-                self.tqdm_update()
+                self.tqdm_update(count=self.task_count)
 
             self.db_pool.close_db(con)
 
         else:
             pool = self.start_thread_read()
             self.task_count = len(self.avg_list)
-            self.tqdm_w = tqdm(
-                total=self.task_count,
-                desc='Rsycn the Schedule',
-                ncols=80)
             if self.mode in ('wr', 'rw'):
+                self.tqdm_init(self.task_count, 'Write db Scheduler', weight=85, mode=True)
                 _pool = ThreadPoolExecutor(max_workers=5)
                 p = [pool.submit(self.write_db) for i in range(5)]
                 _pool.shutdown(wait=True)
@@ -279,19 +290,20 @@ class to_sql(Read_sql):
     def rsync_db(self, *args, **kwargs):
 
         self.pd_params = kwargs
-        con = self.db_pool.get_db()
+
         self.sql = self.sql.strip().replace('\n', ' ')
 
         if self.to_table is None:
             self.to_table = re.search(r'from\s+(\S+)', self.sql, re.I).group(1)
 
-        if self.if_exists == 'delete':
+        if self.if_exists == 'delete' and self.mode !='r':
             self.delete_table()
 
         if self.mode == 'w':
             return self.write()
 
-        self.avg_list = self.verify_sql(con)
+        self.avg_list = self.verify_sql()
+        self.tqdm_init(self.count, desc='Read the scheduler', weight=85)
 
         self.decision()
 
@@ -306,11 +318,13 @@ class to_sql(Read_sql):
         self.task_count = len(file_list)
         self.tqdm_w = tqdm(
             total=self.task_count,
-            desc='Rsycn the Schedule',
+            desc='Rsycn the Scheduler',
             ncols=80)
         T = ThreadPoolExecutor(max_workers=5)
         put_list = [self.queue.put(path) for path in file_list]
         task_list = [T.submit(self.write_db) for i in put_list]
+        T.shutdown(wait=True)
+        return 'finish'
 
     def save_query(self, df_value):
         file_path = os.path.join(self.dir_path, f'{uuid.uuid1()}.pkl')
@@ -353,23 +367,16 @@ class to_sql(Read_sql):
             self.lock_b.acquire()
             if self.execute_count < self.task_count:
                 # df = pd.read_pickle(file_path)
-                file_path = self.queue.get()
-                if self.mode == 'r':
-                    self.tqdm_w.update(1)
-                    self.execute_count += 1
-                    self.lock_b.release()
-
-                elif self.mode in ('wr', 'rw', 'w'):
-                    self.insert_db(file_path)
-                    self.execute_count += 1
-                    self.lock_b.release()
-
+                self.execute_count += 1
+                self.lock_b.release()
+                self.insert_db()
             else:
-                self.tqdm_w.update(self.task_count - self.tqdm_w.n)
+                # self.tqdm_w.update(self.task_count - self.tqdm_w.n)
                 self.lock_b.release()
                 break
 
-    def insert_db(self, path):
+    def insert_db(self, ):
+        path = self.queue.get()
         df = pd.read_pickle(path)
         df = df.mask(df.isna(), None)
         con = self.to_db.get_db()
@@ -387,7 +394,7 @@ class to_sql(Read_sql):
             raise e
         else:
             con.commit()
-            self.tqdm_w.update(1)
+            self.tqdm_update(count=1, mode=True)
         finally:
             del df
             db.close()
@@ -396,11 +403,10 @@ class to_sql(Read_sql):
     def __del__(self):
 
         if self.delete_cache:
-            if self.mode in ('wr', 'rw'):
+            if self.mode in ('wr', 'rw') and self.save_path is None:
                 shutil.rmtree(self.file_path)
         if self.show_progress:
             if self.tqdm is not None:
                 self.tqdm.update(self.count - self.tqdm.n)
             if self.tqdm_w is not None:
-                print('')
                 self.tqdm_w.update(self.task_count - self.tqdm_w.n)

@@ -238,6 +238,7 @@ def to_sql(
         encoding='utf8',
         show_progress=True,
         to_columns=None,
+        save_path=None,
         index_col=None,
         coerce_float=True,
         params=None,
@@ -361,7 +362,8 @@ def to_sql(
         mode=mode,
         delete_cache=delete_cache,
         show_progress=show_progress,
-        file_path=file_path)
+        file_path=file_path,
+        save_path=save_path)
 
     return Fastsql_builder.rsync_db(
         index_col=index_col, coerce_float=coerce_float, params=params,
