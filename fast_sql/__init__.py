@@ -1,4 +1,3 @@
-name = 'fastsql'
 import os
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 from fast_sql.utils.exception import FILEPATH_Exceptions, TYPE_Exception, MODE_Exception
