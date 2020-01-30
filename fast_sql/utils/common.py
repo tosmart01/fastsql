@@ -3,17 +3,19 @@ from DBUtils.PooledDB import PooledDB
 import cx_Oracle
 import pymysql
 import sqlalchemy
+from sqlalchemy import create_engine
 from fast_sql.utils.exception import DB_Exceptions
 
 
 class DB_Pool:
 
     def __init__(self, con, init_num=0, num=15, encoding=None):
-        db_engine = self.get_db_api(con)
+        self.con = con
+        db_engine = self.get_db_api(self.con)
         self.db_type = db_engine[0]
         self.db_config = db_engine[1]
 
-        if "oracle" in con.driver:
+        if "oracle" in self.con.driver:
             try:
                 self.db_pool = PooledDB(
                     self.db_type,
@@ -60,6 +62,11 @@ class DB_Pool:
 
         elif isinstance(con, sqlalchemy.engine.base.Engine):
             return self.classification(con)
+
+        elif isinstance(con,str):
+            self.con = create_engine(con)
+            return self.classification(self.con)
+
         else:
             raise DB_Exceptions("DB_CONNECT:")
 

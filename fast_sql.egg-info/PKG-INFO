@@ -1,0 +1,15 @@
+Metadata-Version: 2.1
+Name: fast-sql
+Version: 1.2.2
+Summary: Multithreaded packaging based on python3.6, for fast read read SQL loaded as DataFrame, fast read read SQL written to CSV, Quick read migration table.
+Home-page: https://github.com/tosmart01/fastsql
+Author: wuwukai
+Author-email: 1286345540@qq.com
+License: UNKNOWN
+Description: pip install fast_sql
+        [index](https://github.com/tosmart01/fastsql)
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3.6
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Description-Content-Type: text/markdown

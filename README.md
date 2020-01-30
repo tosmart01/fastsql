@@ -1,8 +1,13 @@
-#### 带有进度条显示的 快读快写sql,快速迁移表的python包(多线程版)
+#### 带有进度条显示的 多线程快读快写sql,快速迁移表的python包
 
 ##### 一、安装
 
 - pip install fast_sql
+
+##### 二、依赖环境
+
+- python3.6+ 
+- mysql | oracle
 
 ##### 二、示例
 
@@ -23,7 +28,7 @@ image:
 
 
 
-- 快速读取sql生成csv
+- 快速读sql生成csv
 
   ```python
   sql = "select * from test where id <1000000"
@@ -64,4 +69,28 @@ image:
   ```
 
   
+
+##### 三、参数说明
+
+```python
+其他参数兼容pandas read_sql,to_csv
+sql: sql语句
+con: 数据库连接 sqlalchemy连接对象 | sqlalchemy连接字符串 | pymysql连接对象
+thread_num: 开启的线程数量
+encoding: 编码
+show_progress: 是否显示进度条
+from_db: 数据源库
+to_db: 目标库
+if_exists: 目标库相同数据是否删除 delete append orthe(不做处理)
+to_table: 目标库表名，默认与原始sql表名相同
+mode: r > 读取sql序列化到本地
+      w > 将序列化的文件入库
+      rw > 从源库读取写入到目标库
+file_path: 读取数据序列化路径
+delete_cache: 是否删除迁移过程中缓存的序列化文件
+to_columns: 指定目标库的列名，默认与原列名相同
+    
+```
+
+
 

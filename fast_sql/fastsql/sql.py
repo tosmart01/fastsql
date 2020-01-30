@@ -43,7 +43,7 @@ class Read_sql:
         con = self.db_pool.get_db()
         self.pd_params = kwargs
         self.avg_list = self.verify_sql()
-        self.tqdm_init(self.count, desc='Write_csv the scheduler', weight=85)
+        self.tqdm_init(self.count, desc='Read the scheduler', weight=85)
         if self.avg_list is None:
             result = pd.read_sql(self.sql, con, **self.pd_params)
             result.columns = [i.lower() for i in result.columns.tolist()]
