@@ -6,7 +6,7 @@ from fast_sql.fastsql.sql import to_csv as to_CSV
 from fast_sql.fastsql.sql import Read_sql
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 
-version = '1.2.6'
+version = '1.2.7'
 
 def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=False,
              index_col=None, coerce_float=True, params=None,
@@ -186,8 +186,7 @@ def to_csv(
 
     """
     assert path_or_buf,MODE_Exception(name='PATH_ERROR:',value='The path_or_buf cannot be empty')
-    path = os.path.split(path_or_buf)[0]
-    assert os.path.exists(path), FILEPATH_Exceptions('FileNotFoundError', path)
+
     assert isinstance(
         thread_num, int), TYPE_Exception(
         'thread_num', value='int')
