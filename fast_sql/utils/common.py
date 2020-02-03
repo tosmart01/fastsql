@@ -9,50 +9,37 @@ from fast_sql.utils.exception import DB_Exceptions
 
 class DB_Pool:
 
+    mysql_url = ['user', 'password', 'port', 'host', 'db']
     def __init__(self, con, init_num=0, num=15, encoding=None):
         self.con = con
         db_engine = self.get_db_api(self.con)
         self.db_type = db_engine[0]
         self.db_config = db_engine[1]
+        self.config_dict = {'mincached':init_num,'maxcached':num,'maxshared':num,'maxconnections':num,
+                            'blocking':True,'encoding':encoding}
 
-        if "oracle" in self.con.driver:
+        if self.db_type == cx_Oracle:
             try:
                 self.db_pool = PooledDB(
                     self.db_type,
-                    **self.db_config,
-                    mincached=init_num,
-                    maxcached=num,
-                    maxshared=num,
-                    maxconnections=num,
-                    blocking=True,
-                    encoding=encoding)
+                    **self.db_config,**self.config_dict )
             except Exception as e:
                 try:
                     self.db_config['dsn'] = cx_Oracle.makedsn(
                         self.db_config['dsn'])
                     self.db_pool = PooledDB(
-                        self.db_type,
-                        **self.db_config,
-                        mincached=init_num,
-                        maxcached=num,
-                        maxshared=num,
-                        maxconnections=num,
-                        blocking=True,
-                        encoding=encoding)
+                        self.db_type,**self.config_dict, **self.db_config,
+                        )
                 except BaseException:
                     raise DB_Exceptions('DB_CONNECT:')
             self.driver = 'oracle'
 
         else:
+            self.config_dict['charset'] = self.config_dict.pop('encoding')
             self.db_pool = PooledDB(
-                self.db_type,
+                self.db_type,**self.config_dict,
                 **self.db_config,
-                mincached=init_num,
-                maxcached=num,
-                maxshared=num,
-                maxconnections=num,
-                blocking=True,
-                charset=encoding)
+               )
             self.driver = 'mysql'
 
     def get_db_api(self, con):
