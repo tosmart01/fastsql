@@ -6,7 +6,7 @@ from fast_sql.fastsql.sql import to_csv as to_CSV
 from fast_sql.fastsql.sql import Read_sql
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 
-version = '1.2.7'
+version = '1.2.8'
 
 def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=False,
              index_col=None, coerce_float=True, params=None,
@@ -109,7 +109,6 @@ def to_csv(
     quotechar='"',
     line_terminator='\n',
     chunksize=None,
-    tupleize_cols=None,
     date_format=None,
     doublequote=True,
     escapechar=None,
@@ -170,14 +169,6 @@ def to_csv(
         character used to escape `sep` and `quotechar` when appropriate
     chunksize : int or None
         rows to write at a time
-    tupleize_cols : boolean, default False
-        .. deprecated:: 0.21.0
-           This argument will be removed and will always write each row
-           of the multi-index as a separate row in the CSV file.
-
-        Write MultiIndex columns as a list of tuples (if True) or in
-        the new, expanded format, where each MultiIndex column is a row
-        in the CSV (if False).
     date_format : string, default None
         Format string for datetime objects
     decimal: string, default '.'
@@ -218,7 +209,6 @@ def to_csv(
         quotechar=quotechar,
         line_terminator=line_terminator,
         chunksize=chunksize,
-        tupleize_cols=tupleize_cols,
         date_format=date_format,
         doublequote=doublequote,
         escapechar=escapechar,
