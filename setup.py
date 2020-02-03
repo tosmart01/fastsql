@@ -4,7 +4,7 @@ import setuptools
 
 setuptools.setup(
     name="fast_sql",
-    version="1.2.4",
+    version="1.2.5",
     author="wuwukai",
     author_email="1286345540@qq.com",
     description="Multithreaded packaging based on python3.6, for fast read read SQL loaded as DataFrame, fast read read SQL written to CSV, Quick read migration table.",
@@ -12,11 +12,11 @@ setuptools.setup(
     long_description_content_type='text/markdown',
     install_requires=[
         "pandas>=0.23.0",
-        "DBUtils>=1.3",
-        'tqdm>=4.29',
-        'sqlalchemy==1.2.15',
+        "DBUtils",
+        'tqdm',
+        'sqlalchemy',
         'cx_Oracle>=6.0',
-        'pymysql>=0.9.2',
+        'pymysql',
     ],
     url="https://github.com/tosmart01/fastsql",
     packages=setuptools.find_packages(),
