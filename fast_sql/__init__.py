@@ -6,10 +6,10 @@ from fast_sql.fastsql.sql import to_csv as to_CSV
 from fast_sql.fastsql.sql import Read_sql
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 
-version = '1.2.9'
+version = '1.2.11'
 
 def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=False,
-             index_col=None, coerce_float=True, params=None,
+             index_col=None, coerce_float=True, params=None,chunsize=15000,
              parse_dates=None, columns=None,
              ):
     """
@@ -81,7 +81,7 @@ def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=False,
         con,
         thread_num=thread_num,
         encoding=encoding,
-        show_progress=show_progress)
+        show_progress=show_progress,chunsize=chunsize)
 
     return Fastsql_builder.read_sql(
         index_col=index_col, coerce_float=coerce_float, params=params,
@@ -225,6 +225,7 @@ def to_sql(
         file_path=None,
         mode='rw',
         thread_num=15,
+        thread_w=3,
         encoding='utf8',
         show_progress=True,
         to_columns=None,
@@ -353,7 +354,8 @@ def to_sql(
         delete_cache=delete_cache,
         show_progress=show_progress,
         file_path=file_path,
-        save_path=save_path)
+        save_path=save_path,
+        thread_w=thread_w)
 
     return Fastsql_builder.rsync_db(
         index_col=index_col, coerce_float=coerce_float, params=params,

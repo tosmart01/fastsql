@@ -20,7 +20,9 @@ class Read_sql:
             con=None,
             thread_num=None,
             encoding='utf8',
-            show_progress=False):
+            show_progress=False,
+            chunsize=15000,
+            ):
         if con is not None:
             self.db_pool = DB_Pool(con, num=thread_num + 2, encoding=encoding)
             self.driver = self.db_pool.driver
@@ -36,7 +38,7 @@ class Read_sql:
         self.queue = Queue()
         self.count = None
         self.tqdm = None
-        self.chunksize = None
+        self.chunksize = chunsize
         self.tqdm_w = None
 
     def read_sql(self, **kwargs):
@@ -118,7 +120,7 @@ class Read_sql:
         con = self.db_pool.get_db()
         sql = self.sql.lower()
         self.count = self.get_query_count(con, sql)
-        self.chunksize = self.count // self.thread_num // 2
+        # self.chunksize = self.count // self.thread_num // 2
         # self.tqdm_init(self.count, desc='Read the scheduler', weight=85)
 
         if 'order' in sql.lower():
@@ -229,6 +231,7 @@ class to_sql(Read_sql):
         self.file_path = kwargs.pop('file_path')
         self.delete_cache = kwargs.pop('delete_cache')
         self.save_path = kwargs.pop('save_path',None)
+        self.thread_w = kwargs.pop('thread_w',3)
         self.dir_path = None
         self.task_count = None
         self.execute_count = 0
@@ -320,7 +323,7 @@ class to_sql(Read_sql):
             total=self.task_count,
             desc='Rsycn the Scheduler',
             ncols=80)
-        T = ThreadPoolExecutor(max_workers=5)
+        T = ThreadPoolExecutor(max_workers=self.thread_w)
         put_list = [self.queue.put(path) for path in file_list]
         task_list = [T.submit(self.write_db) for i in put_list]
         T.shutdown(wait=True)
@@ -369,18 +372,18 @@ class to_sql(Read_sql):
                 # df = pd.read_pickle(file_path)
                 self.execute_count += 1
                 self.lock_b.release()
-                self.insert_db()
+                path = self.queue.get()
+                self.insert_db(path)
             else:
                 # self.tqdm_w.update(self.task_count - self.tqdm_w.n)
                 self.lock_b.release()
                 break
 
-    def insert_db(self, ):
-        path = self.queue.get()
+    def insert_db(self,path):
         df = pd.read_pickle(path)
         df = df.mask(df.isna(), None)
-        c = [(column,str(date)) for column,date in zip(df.columns.tolist(),df.dtypes) if 'date' in str(date)]
-        if c is not None:
+        if self.write_driver == 'mysql':
+            c = [(column, str(date)) for column, date in zip(df.columns.tolist(), df.dtypes) if 'date' in str(date)]
             for column,date in c:
                 df[column] = df[column].astype('str')
         con = self.to_db.get_db()
