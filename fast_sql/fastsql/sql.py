@@ -379,6 +379,10 @@ class to_sql(Read_sql):
         path = self.queue.get()
         df = pd.read_pickle(path)
         df = df.mask(df.isna(), None)
+        c = [(column,str(date)) for column,date in zip(df.columns.tolist(),df.dtypes) if 'date' in str(date)]
+        if c is not None:
+            for column,date in c:
+                df[column] = df[column].astype('str')
         con = self.to_db.get_db()
         db = con.cursor()
         columns = df.columns.tolist()
