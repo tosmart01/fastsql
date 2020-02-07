@@ -21,7 +21,7 @@ class Read_sql:
             thread_num=None,
             encoding='utf8',
             show_progress=False,
-            chunsize=15000,
+            chunksize=15000,
             ):
         if con is not None:
             self.db_pool = DB_Pool(con, num=thread_num + 2, encoding=encoding)
@@ -38,7 +38,7 @@ class Read_sql:
         self.queue = Queue()
         self.count = None
         self.tqdm = None
-        self.chunksize = chunsize
+        self.chunksize = chunksize
         self.tqdm_w = None
 
     def read_sql(self, **kwargs):
