@@ -1,7 +1,7 @@
 import os
 import uuid
 import re
-import time
+import sys
 import threading
 import shutil
 import pandas as pd
@@ -158,6 +158,7 @@ class Read_sql:
         if self.show_progress:
             if self.tqdm is not None:
                 self.tqdm.update(self.count - self.tqdm.n)
+        sys.stdout.flush()
 
 
 class to_csv(Read_sql):
@@ -416,3 +417,4 @@ class to_sql(Read_sql):
                 self.tqdm.update(self.count - self.tqdm.n)
             if self.tqdm_w is not None:
                 self.tqdm_w.update(self.task_count - self.tqdm_w.n)
+        sys.stdout.flush()
