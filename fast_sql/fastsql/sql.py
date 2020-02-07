@@ -118,13 +118,12 @@ class Read_sql:
 
     def verify_sql(self):
         con = self.db_pool.get_db()
-        sql = self.sql.lower()
-        self.count = self.get_query_count(con, sql)
+        self.count = self.get_query_count(con, self.sql)
         # self.chunksize = self.count // self.thread_num // 2
         # self.tqdm_init(self.count, desc='Read the scheduler', weight=85)
 
-        if 'order' in sql.lower():
-            buf = sql.split('order')
+        if 'order' in self.sql.lower():
+            buf = self.sql.split('order')
             self.ordering = buf[1].split('by')[1].strip().split(',')
             self.sql = buf[0]
 
