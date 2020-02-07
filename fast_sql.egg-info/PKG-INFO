@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: fast-sql
-Version: 1.2.11
+Version: 1.2.12
 Summary: Multithreaded packaging based on python3.6, for fast read read SQL loaded as DataFrame, fast read read SQL written to CSV, Quick read migration table.
 Home-page: https://github.com/tosmart01/fastsql
 Author: wuwukai
