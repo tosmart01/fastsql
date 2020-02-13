@@ -58,10 +58,10 @@ class Read_sql:
                 result = result.append(self.result.pop(0), ignore_index=True)
             if self.driver == 'oracle':
                 result.drop('NO', axis=1, inplace=True)
-            result.columns = [i.lower() for i in result.columns.tolist()]
+            result.columns = [i.upper() for i in result.columns.tolist()]
 
         if self.ordering:
-            result.sort_values([i.strip()
+            result.sort_values([i.strip().upper()
                                 for i in self.ordering], inplace=True)
         self.db_pool.close_db(con)
         self.result.clear()
