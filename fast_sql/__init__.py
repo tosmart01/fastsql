@@ -6,7 +6,7 @@ from fast_sql.fastsql.sql import to_csv as to_CSV
 from fast_sql.fastsql.sql import Read_sql
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 
-version = '1.2.16'
+version = '1.2.17'
 
 def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=False,
              index_col=None, coerce_float=True, params=None,chunksize=15000,
@@ -229,13 +229,14 @@ def to_sql(
         encoding='utf8',
         show_progress=True,
         to_columns=None,
+        chunksize=20000,
         save_path=None,
         index_col=None,
         coerce_float=True,
         params=None,
         parse_dates=None,
         columns=None,
-        delete_cache=False):
+        delete_cache=False,**kwargs):
     """
     Read SQL query or database table into a DataFrame.
 
@@ -351,11 +352,12 @@ def to_sql(
         thread_num=thread_num,
         encoding=encoding,
         mode=mode,
+        chunksize=chunksize,
         delete_cache=delete_cache,
         show_progress=show_progress,
         file_path=file_path,
         save_path=save_path,
-        thread_w=thread_w)
+        thread_w=thread_w,**kwargs)
 
     return Fastsql_builder.rsync_db(
         index_col=index_col, coerce_float=coerce_float, params=params,
