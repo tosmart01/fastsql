@@ -6,7 +6,7 @@ from fast_sql.fastsql.sql import to_csv as to_CSV
 from fast_sql.fastsql.sql import Read_sql
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 
-version = '1.2.17'
+version = '1.2.18'
 
 def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=False,
              index_col=None, coerce_float=True, params=None,chunksize=15000,
@@ -236,7 +236,9 @@ def to_sql(
         params=None,
         parse_dates=None,
         columns=None,
-        delete_cache=False,**kwargs):
+        delete_cache=False,
+        data_processing=None,
+        **kwargs):
     """
     Read SQL query or database table into a DataFrame.
 
@@ -319,7 +321,6 @@ def to_sql(
     assert isinstance(
         thread_num, int), TYPE_Exception(
         'thread_num', value='int')
-    assert isinstance(sql, str), TYPE_Exception('sql', value='str')
     assert isinstance(
         show_progress, bool), TYPE_Exception(
         'show_progress', value='bool')
@@ -341,6 +342,8 @@ def to_sql(
             'mode ERROR: ', value='if mode == w or W ,The file_path must exist')
         assert os.path.exists(file_path), FILEPATH_Exceptions(
             'FileNotFoundError', file_path)
+    if mode.lower() in ['wr','rw','r']:
+        assert isinstance(sql, str), TYPE_Exception('sql', value='str')
 
     Fastsql_builder = to_SQL(
         sql,
@@ -357,7 +360,9 @@ def to_sql(
         show_progress=show_progress,
         file_path=file_path,
         save_path=save_path,
-        thread_w=thread_w,**kwargs)
+        thread_w=thread_w,
+        data_processing= data_processing,
+        **kwargs)
 
     return Fastsql_builder.rsync_db(
         index_col=index_col, coerce_float=coerce_float, params=params,

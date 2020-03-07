@@ -235,6 +235,7 @@ class to_sql(Read_sql):
         self.dir_path = None
         self.task_count = None
         self.execute_count = 0
+        self.data_processing = kwargs.pop('data_processing',None)
         super().__init__(*args, **kwargs)
         if to_db is not None:
             self.to_db = DB_Pool(to_db, num=8, encoding=kwargs.get('encoding'))
@@ -379,8 +380,12 @@ class to_sql(Read_sql):
                 self.lock_b.release()
                 break
 
+
     def insert_db(self,path):
         df = pd.read_pickle(path)
+        if self.data_processing is not None:
+            df = self.data_processing(df)
+
         df = df.mask(df.isna(), None)
         if self.write_driver == 'mysql':
             c = [(column, str(date)) for column, date in zip(df.columns.tolist(), df.dtypes) if 'date' in str(date)]
