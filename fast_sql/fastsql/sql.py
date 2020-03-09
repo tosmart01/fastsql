@@ -232,6 +232,7 @@ class to_sql(Read_sql):
         self.delete_cache = kwargs.pop('delete_cache')
         self.save_path = kwargs.pop('save_path',None)
         self.thread_w = kwargs.pop('thread_w',3)
+        self.delete_sql= kwargs.pop('delete_sql',None)
         self.dir_path = None
         self.task_count = None
         self.execute_count = 0
@@ -253,6 +254,8 @@ class to_sql(Read_sql):
         sql = 'delete ' + re.search('from.*', sql, re.I).group()
         con = self.to_db.get_db()
         db = con.cursor()
+        if self.delete_sql is not None:
+            sql = self.delete_sql
         db.execute(sql)
         con.commit()
         self.to_db.close_db(con)
