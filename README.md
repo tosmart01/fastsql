@@ -18,8 +18,6 @@
 
 ```python
 import fast_sql
-import pandas as pd
-from sqlalchemy import create_engine
 ```
 
 ##### 多线程 读表生成DataFrame
