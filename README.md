@@ -11,86 +11,98 @@
 
 ##### 二、示例
 
-- 快读读取sql生成DataFrame
 
 ```python
 import fast_sql
+import pandas as pd
 from sqlalchemy import create_engine
-sql = "select * from test where id <1000000"
-con = create_engine("oracle+cx_oracle://wuwukai:test@localhost:1521/helowin")
-res = fast_sql.read_sql(sql,con,show_progress=True,thread_num=8)
-res.head()
 ```
 
-image:
-
-![快读示例](http://www.chaoyue.red/static/media/example_1.png)
-
-
-
-- 快速读sql生成csv
-
-  ```python
-  sql = "select * from test where id <1000000"
-  path = '/home/test.csv'
-  con = create_engine("oracle+cx_oracle://wuwukai:wuwukai@localhost:1521/helowin")
-  res = fast_sql.to_csv(sql,con,path_or_buf=path,
-                       show_progress=True,thread_num=8,index=None)
-  
-  ```
-
-  
-
-- 快速表迁移
-
-  ```python
-  #1.在线迁移
-  sql = "select * from student where id <1000000"
-  con = create_engine("oracle+cx_oracle://wuwukai:test@localhost:1521/helowin")
-  to_db = create_engine("mysql+pymysql://root:123456@localhost:3306/aps_2")
-  res = fast_sql.to_sql(sql,from_db=con,to_db=to_db,if_exists='delete',
-         			    mode='rw',to_table='stu',delete_cache=True,show_progress=True,)
-  ```
-
-  ![](http://www.chaoyue.red/static/media/example_2.png)
-
-  ```python
-  # 2.离线迁移，先序列化到本地，在迁移
-  sql = "select * from student where id <1000000"
-  con = create_engine("oracle+cx_oracle://wuwukai:test@localhost:1521/helowin")
-  to_db = create_engine("mysql+pymysql://root:123456@localhost:3306/aps_2")
-  # 写入本地，保存在当前工作目录
-  res = fast_sql.to_sql(sql,from_db=con,
-         				  mode='r',to_table='stu',show_progress=True,)
-  # 入库，file_path 为保存的目录
-  res = fast_sql.to_sql(sql,to_db=con,file_path='/home/test'
-        				  mode='w',to_table='stu',show_progress=True,)
-  
-  ```
-
-  
-
-##### 三、参数说明
+##### 多线程 读表生成DataFrame
 
 ```python
-其他参数兼容pandas read_sql,to_csv
-sql: sql语句
-con: 数据库连接 sqlalchemy连接对象 | sqlalchemy连接字符串 | pymysql连接对象
-thread_num: 开启的线程数量
-encoding: 编码
-show_progress: 是否显示进度条
-from_db: 数据源库
-to_db: 目标库
-if_exists: 目标库相同数据是否删除 delete append orthe(不做处理)
-to_table: 目标库表名，默认与原始sql表名相同
-mode: r > 读取sql序列化到本地
-      w > 将序列化的文件入库
-      rw > 从源库读取写入到目标库
-file_path: 读取数据序列化路径
-delete_cache: 是否删除迁移过程中缓存的序列化文件
-to_columns: 指定目标库的列名，默认与原列名相同
+# con 数据库连接字符串，或者 sqlalchemy 对象
+# chunksize 单个线程读取数量 默认20000
+# show_progress 是否显示进度条
+# thread_num 线程数量
+# return Dataframe
+# 其他参数兼容 pandas read_sql
+con = "oracle+cx_oracle://wuwukai:wuwukai@49.234.120.15:1521/helowin"
+df = fast_sql.read_sql('select * from student where SNO<2000000',con,show_progress=True,
+                       chunksize = 40000,
+                       thread_num = 15,)
+```
+
+```
+Read the scheduler: 100%|█████████████████| 500001/500001 [01:20<00:00, 28192.45it/s]
+```
+
+##### 表迁移
+
+```python
+def astype_df(df):
+    # 目标库 ctime列为str类型，这里做 转换返回
+    df.CTIME = df.CTIME.astype('str')
+    return df
+```
+
+```python
+# from_db 数据源
+# to_db 目标库
+# to_table 目标表名
+# if_exists 是否删除目标库数据 （append,delete,other）
+# 如果 if_exists='delete' 可以指定删除语句 delete_sql = 'delete from xxx' ,默认使用源sql delete
+# mode 迁移方式，rw 在线迁移，r 序列化到本地（需指定 save_path）， w 本地文件到数据库 (需指定file_path)
+# delete_cache 是否删除迁移过程中 缓存文件，默认删除
+# data_processing 入库前数据是否做处理，如目标库 列 类型 不一致，列名不同等，接受一个函数，参数为入库前
+# DataFrame，需返回处理后的DataFrame
+# chunksize 每个线程迁移数量
+# thread_num 每个线程读取数量
+# thread_w 写入线程数量
+con = create_engine("oracle+cx_oracle://wuwukai:wuwukai@49.234.120.15:1521/helowin")
+to_db = create_engine("mysql+pymysql://root:123456@47.107.237.77:3306/aps_2")
+sql = '''select * from student where SNO<2000000'''
+fast_sql.to_sql(sql,
+                from_db = con,
+                to_db = to_db,
+                to_table = 'stu',
+                if_exists='append',
+                mode='rw',show_progress=True,
+                delete_cache=True,
+                data_processing=astype_df)
     
 ```
 
+```
+Read the scheduler:   0%|                                 | 0/500001 [00:00<?, ?it/s]
+```
+
+```
+Read the scheduler:  76%|█████████████▋    | 380000/500001 [01:02<00:13, 8921.37it/s]
+```
+
+```
+Write db Scheduler:  96%|██████████████████████████▉ | 26/27 [01:13<00:01,  1.10s/it]    
+```
+
+```
+Write db Scheduler: 100%|████████████████████████████| 27/27 [01:13<00:00,  1.16it/s]
+```
+
+```
+'finish'
+```
+
+
+
+##### 读表生成csv
+
+```python
+SQL =  “从测试选择*其中id <百万” 
+路径=  ' /home/test.csv ' 
+CON = create_engine（ “预言+ cx_oracle：// wuwukai：wuwukai @本地：1521 / helowin ”）
+res = fast_sql.to_csv（sql，con，path_or_buf =路径，
+                      show_progress = True，thread_num = 8，index = None）
+```
 
 
