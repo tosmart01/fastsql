@@ -29,7 +29,7 @@ import fast_sql
 # thread_num 线程数量
 # return Dataframe
 # 其他参数兼容 pandas read_sql
-con = "oracle+cx_oracle://wuwukai:wuwukai@49.234.120.15:1521/helowin"
+con = "oracle+cx_oracle://wuwukai:wuwukai@localhost:1521/helowin"
 df = fast_sql.read_sql('select * from student where SNO<2000000',con,show_progress=True,
                        chunksize = 40000,
                        thread_num = 15,)
@@ -61,8 +61,8 @@ def astype_df(df):
 # chunksize 每个线程迁移数量
 # thread_num 每个线程读取数量
 # thread_w 写入线程数量
-con = create_engine("oracle+cx_oracle://wuwukai:wuwukai@49.234.120.15:1521/helowin")
-to_db = create_engine("mysql+pymysql://root:123456@47.107.237.77:3306/aps_2")
+con = create_engine("oracle+cx_oracle://wuwukai:wuwukai@localhost:1521/helowin")
+to_db = create_engine("mysql+pymysql://root:123456@localhost:3306/aps_2")
 sql = '''select * from student where SNO<2000000'''
 fast_sql.to_sql(sql,
                 from_db = con,
@@ -100,11 +100,10 @@ Write db Scheduler: 100%|██████████████████�
 ##### 读表生成csv
 
 ```python
-SQL =  “从测试选择*其中id <百万” 
-路径=  ' /home/test.csv ' 
-CON = create_engine（ “预言+ cx_oracle：// wuwukai：wuwukai @本地：1521 / helowin ”）
-res = fast_sql.to_csv（sql，con，path_or_buf =路径，
-                      show_progress = True，thread_num = 8，index = None）
+sql = '''select * from student where SNO<2000000'''
+path = '/home/test.csv'
+to_db = create_engine("mysql+pymysql://root:123456@localhost:3306/aps_2")
+fast_sql.to_csv(sql,con,path_or_buf=path,show_progress=True,index=None)
 ```
 
 
