@@ -396,11 +396,12 @@ class to_sql(Read_sql):
                 df[column] = df[column].astype('str')
         con = self.to_db.get_db()
         db = con.cursor()
-        columns = df.columns.tolist()
-        sql = self.get_sql(columns)
 
         if self.to_columns is not None:
             df = df[self.to_columns]
+
+        columns = df.columns.tolist()
+        sql = self.get_sql(columns)
 
         try:
             db.executemany(sql, df.values.tolist())
