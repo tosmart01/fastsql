@@ -4,7 +4,7 @@ import setuptools
 
 setuptools.setup(
     name="fast_sql",
-    version="1.2.20",
+    version="1.2.21",
     author="wuwukai",
     author_email="1286345540@qq.com",
     description="Multithreaded packaging based on python3.6, for fast read read SQL loaded as DataFrame, fast read read SQL written to CSV, Quick read migration table.",
