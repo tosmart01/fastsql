@@ -22,6 +22,7 @@ class Read_sql:
             encoding='utf8',
             show_progress=False,
             chunksize=15000,
+            desc=None
             ):
         if con is not None:
             self.db_pool = DB_Pool(con, num=thread_num + 2, encoding=encoding)
@@ -40,6 +41,7 @@ class Read_sql:
         self.tqdm = None
         self.chunksize = chunksize
         self.tqdm_w = None
+        self.desc = desc
 
     def read_sql(self, **kwargs):
         con = self.db_pool.get_db()
@@ -47,7 +49,7 @@ class Read_sql:
         self.avg_list = self.verify_sql()
         if self.avg_list is None:
             return 'query is empty'
-        self.tqdm_init(self.count, desc='Read the scheduler', weight=85)
+        self.tqdm_init(self.count, weight=85)
         if self.avg_list is None:
             result = pd.read_sql(self.sql, con, **self.pd_params)
             result.columns = [i.lower() for i in result.columns.tolist()]
@@ -81,12 +83,12 @@ class Read_sql:
             else:
                 tqdm.update(self.count - tqdm.n)
 
-    def tqdm_init(self, count, desc, weight,mode=None):
+    def tqdm_init(self, count,weight,mode=None):
         if self.show_progress:
             if mode is None:
-                self.tqdm = tqdm(total=count, desc=desc, ncols=weight)
+                self.tqdm = tqdm(total=count, desc=self.desc, ncols=weight)
             else:
-                self.tqdm_w = tqdm(total=count, desc=desc, ncols=weight)
+                self.tqdm_w = tqdm(total=count, desc=self.desc, ncols=weight)
 
     @collection_error
     def get_sql_query(self, st, en, *args, **kwargs):
@@ -194,7 +196,7 @@ class to_csv(Read_sql):
         self.kwargs.pop('chunksize')
         self.pd_params = {'columns': None}
         self.avg_list = self.verify_sql()
-        self.tqdm_init(self.count, desc='write_csv the scheduler', weight=85)
+        self.tqdm_init(self.count, weight=85)
         if self.avg_list is None:
             pd.read_sql(self.sql, con).to_csv(*args, **kwargs)
             self.tqdm_update(self.count)
@@ -280,7 +282,7 @@ class to_sql(Read_sql):
             df.to_pickle(file_path)
             if self.mode in ('wr', 'rw'):
                 self.task_count = 1
-                self.tqdm_init(self.task_count, desc='Write the scheduler', weight=85, mode=True)
+                self.tqdm_init(self.task_count, weight=85, mode=True)
                 self.queue.put(file_path)
                 self.write_db()
             else:
@@ -292,7 +294,7 @@ class to_sql(Read_sql):
             pool = self.start_thread_read()
             self.task_count = len(self.avg_list)
             if self.mode in ('wr', 'rw'):
-                self.tqdm_init(self.task_count, 'Write db Scheduler', weight=85, mode=True)
+                self.tqdm_init(self.task_count, weight=85, mode=True)
                 _pool = ThreadPoolExecutor(max_workers=5)
                 p = [pool.submit(self.write_db) for i in range(5)]
                 _pool.shutdown(wait=True)
@@ -314,7 +316,7 @@ class to_sql(Read_sql):
             return self.write()
 
         self.avg_list = self.verify_sql()
-        self.tqdm_init(self.count, desc='Read the scheduler', weight=85)
+        self.tqdm_init(self.count, weight=85)
 
         self.decision()
 
@@ -329,7 +331,7 @@ class to_sql(Read_sql):
         self.task_count = len(file_list)
         self.tqdm_w = tqdm(
             total=self.task_count,
-            desc='Rsycn the Scheduler',
+            desc=self.desc,
             ncols=80)
         T = ThreadPoolExecutor(max_workers=self.thread_w)
         put_list = [self.queue.put(path) for path in file_list]
@@ -393,11 +395,17 @@ class to_sql(Read_sql):
         if self.data_processing is not None:
             df = self.data_processing(df)
 
-        df = df.mask(df.isna(), None)
+        c = [(column, str(date)) for column, date in zip(df.columns.tolist(), df.dtypes) if 'date' in str(date)]
         if self.write_driver == 'mysql':
-            c = [(column, str(date)) for column, date in zip(df.columns.tolist(), df.dtypes) if 'date' in str(date)]
-            for column,date in c:
+            for column, date in c:
                 df[column] = df[column].astype('str')
+                df.replace('NaT', None, inplace=True)
+        else:
+            for column, date in c:
+                df[column] = df[column].astype('object')
+
+        df = df.mask(df.isna(), None)
+
         con = self.to_db.get_db()
         db = con.cursor()
 

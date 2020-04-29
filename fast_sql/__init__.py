@@ -6,11 +6,11 @@ from fast_sql.fastsql.sql import to_csv as to_CSV
 from fast_sql.fastsql.sql import Read_sql
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 
-version = '1.2.21'
+version = '1.2.22'
 
 def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=False,
              index_col=None, coerce_float=True, params=None,chunksize=15000,
-             parse_dates=None, columns=None,
+             parse_dates=None, columns=None,desc='read the scheduler'
              ):
     """
     Read SQL query or database table into a DataFrame.
@@ -81,7 +81,8 @@ def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=False,
         con,
         thread_num=thread_num,
         encoding=encoding,
-        show_progress=show_progress,chunksize=chunksize)
+        show_progress=show_progress,chunksize=chunksize,
+        desc=desc)
 
     return Fastsql_builder.read_sql(
         index_col=index_col, coerce_float=coerce_float, params=params,
@@ -113,6 +114,7 @@ def to_csv(
     doublequote=True,
     escapechar=None,
     decimal='.',
+    desc = 'write the csv'
 ):
     r"""Write DataFrame to a comma-separated values (csv) file
 
@@ -191,7 +193,8 @@ def to_csv(
         con,
         thread_num=thread_num,
         encoding=encoding,
-        show_progress=show_progress)
+        show_progress=show_progress,
+        desc= desc)
 
     return Fastsql_builder.build_csv(
         path_or_buf=path_or_buf,
@@ -239,6 +242,7 @@ def to_sql(
         delete_cache=False,
         data_processing=None,
         delete_sql=None,
+        desc = 'rsync the scheduler',
         **kwargs):
     """
     Read SQL query or database table into a DataFrame.
@@ -364,6 +368,7 @@ def to_sql(
         thread_w=thread_w,
         data_processing= data_processing,
         delete_sql = delete_sql,
+        desc = desc,
         **kwargs)
 
     return Fastsql_builder.rsync_db(
