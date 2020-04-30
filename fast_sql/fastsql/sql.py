@@ -363,7 +363,7 @@ class to_sql(Read_sql):
         insert_col = ','.join(columns)
         con = self.to_db.get_db()
         if self.write_driver == 'oracle':
-            columns = self.get_sys_guid_col(columns, con)
+            # columns = self.get_sys_guid_col(columns, con)
             sql_col = ':' + ',:'.join([str(i)
                                        for i in range(1, len(columns) + 1)])
             sql = f'insert into {self.to_table}({insert_col}) values({sql_col})'
