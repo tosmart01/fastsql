@@ -47,8 +47,6 @@ class Read_sql:
         con = self.db_pool.get_db()
         self.pd_params = kwargs
         self.avg_list = self.verify_sql()
-        if self.avg_list is None:
-            return 'query is empty'
         self.tqdm_init(self.count, weight=85)
         if self.avg_list is None:
             result = pd.read_sql(self.sql, con, **self.pd_params)
@@ -123,8 +121,6 @@ class Read_sql:
     def verify_sql(self):
         con = self.db_pool.get_db()
         self.count = self.get_query_count(con, self.sql)
-        if self.count == 0:
-            return None
         # self.chunksize = self.count // self.thread_num // 2
         # self.tqdm_init(self.count, desc='Read the scheduler', weight=85)
 
