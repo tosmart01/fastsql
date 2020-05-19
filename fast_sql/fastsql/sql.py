@@ -129,7 +129,7 @@ class Read_sql:
             self.ordering = buf[1].split('by')[1].strip().split(',')
             self.sql = buf[0]
 
-        if self.count < 15000:
+        if self.count < 3000:
             return None
 
         if self.driver == 'oracle':
@@ -357,7 +357,7 @@ class to_sql(Read_sql):
 
     def get_sql(self, columns,):
         insert_col = ','.join(columns)
-        con = self.to_db.get_db()
+        # con = self.to_db.get_db()
         if self.write_driver == 'oracle':
             # columns = self.get_sys_guid_col(columns, con)
             sql_col = ':' + ',:'.join([str(i)

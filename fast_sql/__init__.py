@@ -6,10 +6,10 @@ from fast_sql.fastsql.sql import to_csv as to_CSV
 from fast_sql.fastsql.sql import Read_sql
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 
-version = '1.2.24'
+version = '1.2.25'
 
-def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=False,
-             index_col=None, coerce_float=True, params=None,chunksize=15000,
+def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=True,
+             index_col=None, coerce_float=True, params=None,chunksize=20000,
              parse_dates=None, columns=None,desc='read the scheduler'
              ):
     """
@@ -239,7 +239,7 @@ def to_sql(
         params=None,
         parse_dates=None,
         columns=None,
-        delete_cache=False,
+        delete_cache=True,
         data_processing=None,
         delete_sql=None,
         desc = 'rsync the scheduler',
