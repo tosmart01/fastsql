@@ -1,3 +1,4 @@
+import re
 import traceback
 from DBUtils.PooledDB import PooledDB
 import cx_Oracle
@@ -22,16 +23,10 @@ class DB_Pool:
             try:
                 self.db_pool = PooledDB(
                     self.db_type,
-                    **self.db_config,**self.config_dict )
-            except Exception as e:
-                try:
-                    self.db_config['dsn'] = cx_Oracle.makedsn(
-                        self.db_config['dsn'])
-                    self.db_pool = PooledDB(
-                        self.db_type,**self.config_dict, **self.db_config,
-                        )
-                except BaseException:
-                    raise DB_Exceptions('DB_CONNECT:')
+                    **self.db_config,**self.config_dict)
+            except Exception:
+                raise DB_Exceptions('DB_CONNECT:')
+
             self.driver = 'oracle'
 
         else:
@@ -57,31 +52,91 @@ class DB_Pool:
         else:
             raise DB_Exceptions("DB_CONNECT:")
 
+    def make_dsn(self,dsn):
+        if 'DESCRIPTION' in dsn.upper():
+            return dsn
+        else:
+            _dsn = re.search(r'(.+):(\d+)/(\w+)',dsn)
+            return cx_Oracle.makedsn(*_dsn.groups())
+
+
     def classification(self, con):
         if "oracle" in con.driver:
             _url = con.url
             dsn = str(_url).split('@')[1]
             db_engine = {
-                "user": _url.__dict__.get('username'),
-                'password': _url.__dict__.get('password_original'),
-                'dsn': dsn}
+                "user": _url.username,
+                'password': _url.password_original,
+                'dsn': self.make_dsn(dsn)}
             return cx_Oracle, db_engine
 
         elif 'mysql' in con.driver:
-            _url = con.url.__dict__
+            _url = con.url
             db_engine = {
-                "user": _url.get('username'),
-                "password": _url.get("password_original"),
-                "port": _url.get("port"),
-                "host": _url.get("host"),
-                "db": _url.get("database")}
+                     "user": _url.username,
+                     "password": _url.password_original,
+                     "port": _url.port,
+                     "host": _url.host,
+                     "db": _url.database}
             return pymysql, db_engine
+
 
     def close_db(self, con):
         con.close()
 
     def get_db(self):
         con = self.db_pool.connection()
+        return con
+
+
+class Sqlalchemy_Pool(DB_Pool):
+
+    def __init__(self, con,num=15, encoding='utf8'):
+        self.con = con
+        db_engine = self.get_db_api(self.con)
+        self.db_type = db_engine[0]
+        self.db_config = db_engine[1]
+
+        try:
+            self.db_pool =  create_engine(
+                            self.db_config,
+                            max_overflow = 0,
+                            pool_size = num,
+                            pool_timeout = 10,
+                            pool_recycle = -1,
+                            encoding = encoding,
+                    )
+        except Exception as e:
+            raise DB_Exceptions('DB_CONNECT:')
+
+        if self.db_type == cx_Oracle:
+            self.driver = 'oracle'
+        else:
+            self.driver = 'mysql'
+
+    def classification(self, con):
+        if "oracle" in con.driver:
+            _url = con.url
+            dsn = str(_url).split('@')[1]
+            user = _url.username
+            password = _url.password_original
+            dsn =  self.make_dsn(dsn)
+            return cx_Oracle, f'oracle+cx_oracle://{user}:{password}@{dsn}'
+
+        elif 'mysql' in con.driver:
+            _url = con.url
+            user = _url.username
+            password = _url.password_original
+            port = _url.port
+            host = _url.host
+            db = _url.database
+            return pymysql, f"mysql+pymysql://{user}:{password}@{host}:{port}/{db}"
+
+    def close_db(self, con):
+        pass
+
+    def get_db(self):
+        con = self.db_pool
         return con
 
 
@@ -94,3 +149,4 @@ def collection_error(fun):
             raise e
 
     return hander
+

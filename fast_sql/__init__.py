@@ -6,7 +6,7 @@ from fast_sql.fastsql.sql import to_csv as to_CSV
 from fast_sql.fastsql.sql import Read_sql
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 
-version = '1.2.25'
+version = '1.2.26'
 
 def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=True,
              index_col=None, coerce_float=True, params=None,chunksize=20000,
@@ -329,7 +329,10 @@ def to_sql(
     assert isinstance(
         show_progress, bool), TYPE_Exception(
         'show_progress', value='bool')
-    assert isinstance(to_table, str), TYPE_Exception('to_table', value='str')
+
+    if to_table is not None:
+        assert isinstance(to_table, str), TYPE_Exception('to_table', value='str')
+
     assert isinstance(if_exists, str), TYPE_Exception('if_exists', value='str')
     assert isinstance(
         mode, str), TYPE_Exception(

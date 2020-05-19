@@ -9,7 +9,7 @@ from tqdm import tqdm
 from queue import Queue
 from fast_sql.utils.exception import DB_Exceptions
 from concurrent.futures import ThreadPoolExecutor
-from fast_sql.utils.common import DB_Pool, collection_error
+from fast_sql.utils.common import DB_Pool, collection_error,Sqlalchemy_Pool
 
 
 class Read_sql:
@@ -25,7 +25,7 @@ class Read_sql:
             desc=None
             ):
         if con is not None:
-            self.db_pool = DB_Pool(con, num=thread_num + 2, encoding=encoding)
+            self.db_pool = Sqlalchemy_Pool(con, num=thread_num + 6, encoding=encoding)
             self.driver = self.db_pool.driver
         self.sql = sql.strip().replace('\n', ' ')
         self.thread_num = thread_num
@@ -58,9 +58,11 @@ class Read_sql:
             result = self.result.pop(0)
             for i in range(len(self.result)):
                 result = result.append(self.result.pop(0), ignore_index=True)
+
+            result.columns = [i.upper() for i in result.columns.tolist()]
+
             if self.driver == 'oracle':
                 result.drop('NO', axis=1, inplace=True)
-            result.columns = [i.upper() for i in result.columns.tolist()]
 
         if self.ordering:
             result.sort_values([i.strip().upper()
@@ -129,7 +131,7 @@ class Read_sql:
             self.ordering = buf[1].split('by')[1].strip().split(',')
             self.sql = buf[0]
 
-        if self.count < 3000:
+        if self.count < 2000:
             return None
 
         if self.driver == 'oracle':
@@ -151,7 +153,8 @@ class Read_sql:
         return avg_list
 
     def get_query_count(self, con, sql):
-        _sql = "select count(*) " + re.search(r"from\s+.*", sql, re.I).group()
+        # _sql = "select count(*) " + re.search(r"from\s+.*", sql, re.I).group()
+        _sql = f"select count(*) from ({sql}) t"
         count = pd.read_sql(_sql, con, **self.pd_params).iloc[0, 0]
         # assert count > 0, DB_Exceptions('DB_EMPTY:')
         return count
@@ -210,7 +213,7 @@ class to_csv(Read_sql):
     def save_query(self, df_value):
         self.lock.acquire()
         if self.driver == 'oracle':
-            df_value.drop('NO', axis=1, inplace=True)
+            df_value.drop(df_value.columns[0], axis=1, inplace=True)
 
         # if self.ordering:
         #     df_value.columns = [i.lower() for i in df_value.columns.tolist()]
@@ -338,7 +341,7 @@ class to_sql(Read_sql):
     def save_query(self, df_value):
         file_path = os.path.join(self.dir_path, f'{uuid.uuid1()}.pkl')
         if self.driver == 'oracle':
-            df_value.drop('NO', axis=1, inplace=True)
+            df_value.drop(df_value.columns[0], axis=1, inplace=True)
         df_value.to_pickle(file_path)
         self.queue.put(file_path)
         self.tqdm_update()
