@@ -50,7 +50,7 @@ class Read_sql:
         self.tqdm_init(self.count, weight=85)
         if self.avg_list is None:
             result = pd.read_sql(self.sql, con, **self.pd_params)
-            result.columns = [i.lower() for i in result.columns.tolist()]
+            result.columns = [i.upper() for i in result.columns.tolist()]
             self.tqdm_update(self.count)
         else:
             pool = self.start_thread_read()
@@ -391,6 +391,7 @@ class to_sql(Read_sql):
 
     def insert_db(self,path):
         df = pd.read_pickle(path)
+        df.columns = [i.upper() for i in df.columns]
         if self.data_processing is not None:
             df = self.data_processing(df)
 
