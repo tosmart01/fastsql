@@ -53,8 +53,8 @@ class Read_sql:
             result.columns = [i.upper() for i in result.columns.tolist()]
             self.tqdm_update(self.count)
         else:
-            pool = self.start_thread_read()
-            pool.shutdown(wait=True)
+            task_list = self.start_thread_read()
+            self.get_thread_result(task_list)
             result = self.result.pop(0)
             for i in range(len(self.result)):
                 result = result.append(self.result.pop(0), ignore_index=True)
@@ -118,7 +118,7 @@ class Read_sql:
         pool = ThreadPoolExecutor(max_workers=self.thread_num)
         task_list = [pool.submit(self.get_sql_query, st, en)
                      for st, en in self.avg_list]
-        return pool
+        return task_list
 
     def verify_sql(self):
         con = self.db_pool.get_db()
@@ -158,6 +158,10 @@ class Read_sql:
         count = pd.read_sql(_sql, con, **self.pd_params).iloc[0, 0]
         # assert count > 0, DB_Exceptions('DB_EMPTY:')
         return count
+
+    def get_thread_result(self,task_list):
+        for job in task_list:
+            job.result()
 
     def __del__(self):
         if self.show_progress:
@@ -203,9 +207,9 @@ class to_csv(Read_sql):
             df = pd.read_sql(self.write_csv_header(),con)
             # df = next(pd.read_sql(self.sql, con, chunksize=1)).iloc[1:, ]
             df.to_csv(*args, **kwargs)
-            pool = self.start_thread_read()
+            task_list = self.start_thread_read()
             self.db_pool.close_db(con)
-            pool.shutdown(wait=True)
+            self.get_thread_result(task_list)
 
         self.db_pool.close_db(con)
         return 'finish'
@@ -290,14 +294,14 @@ class to_sql(Read_sql):
             self.db_pool.close_db(con)
 
         else:
-            pool = self.start_thread_read()
+            task_list = self.start_thread_read()
             self.task_count = len(self.avg_list)
             if self.mode in ('wr', 'rw'):
                 self.tqdm_init(self.task_count, weight=85, mode=True)
                 _pool = ThreadPoolExecutor(max_workers=5)
-                p = [pool.submit(self.write_db) for i in range(5)]
-                _pool.shutdown(wait=True)
-            pool.shutdown(wait=True)
+                p = [_pool.submit(self.write_db) for i in range(5)]
+                self.get_thread_result(p)
+            self.get_thread_result(task_list)
 
     def rsync_db(self, *args, **kwargs):
 
