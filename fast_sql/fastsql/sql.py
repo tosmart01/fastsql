@@ -53,7 +53,7 @@ class Read_sql:
             result.columns = [i.upper() for i in result.columns.tolist()]
             self.tqdm_update(self.count)
         else:
-            task_list = self.start_thread_read()
+            task_list,pool = self.start_thread_read()
             self.get_thread_result(task_list)
             result = self.result.pop(0)
             for i in range(len(self.result)):
@@ -118,7 +118,7 @@ class Read_sql:
         pool = ThreadPoolExecutor(max_workers=self.thread_num)
         task_list = [pool.submit(self.get_sql_query, st, en)
                      for st, en in self.avg_list]
-        return task_list
+        return task_list,pool
 
     def verify_sql(self):
         con = self.db_pool.get_db()
@@ -207,7 +207,7 @@ class to_csv(Read_sql):
             df = pd.read_sql(self.write_csv_header(),con)
             # df = next(pd.read_sql(self.sql, con, chunksize=1)).iloc[1:, ]
             df.to_csv(*args, **kwargs)
-            task_list = self.start_thread_read()
+            task_list,pool = self.start_thread_read()
             self.db_pool.close_db(con)
             self.get_thread_result(task_list)
 
@@ -294,12 +294,12 @@ class to_sql(Read_sql):
             self.db_pool.close_db(con)
 
         else:
-            task_list = self.start_thread_read()
+            task_list,pool = self.start_thread_read()
             self.task_count = len(self.avg_list)
             if self.mode in ('wr', 'rw'):
                 self.tqdm_init(self.task_count, weight=85, mode=True)
-                _pool = ThreadPoolExecutor(max_workers=5)
-                p = [_pool.submit(self.write_db) for i in range(5)]
+                _pool = ThreadPoolExecutor(max_workers=self.thread_w)
+                p = [pool.submit(self.write_db) for i in range(5)]
                 self.get_thread_result(p)
             self.get_thread_result(task_list)
 
