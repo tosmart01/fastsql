@@ -1,10 +1,10 @@
 import re
 import traceback
-from DBUtils.PooledDB import PooledDB
 import cx_Oracle
 import pymysql
 import sqlalchemy
 from sqlalchemy import create_engine
+from DBUtils.PooledDB import PooledDB
 from fast_sql.utils.exception import DB_Exceptions
 
 
@@ -49,6 +49,9 @@ class DB_Pool:
             self.con = create_engine(con)
             return self.classification(self.con)
 
+        elif hasattr(con,'external_name'):
+            self.con = create_engine(con.external_name)
+            return self.classification(self.con)
         else:
             raise DB_Exceptions("DB_CONNECT:")
 

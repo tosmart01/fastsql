@@ -1,4 +1,19 @@
 import os
+import cx_Oracle
+from copy import deepcopy
+connect_copy = deepcopy(cx_Oracle.connect)
+
+def connects(*args,**kwargs):
+    conn = connect_copy(*args,**kwargs)
+    user = kwargs.get('user') or args[0]
+    password = kwargs.get('password') or args[1]
+    dsn = kwargs.get('dsn') or args[2]
+    conn.external_name = f"oracle+cx_oracle://{user}:{password}@{dsn}"
+    return conn
+
+cx_Oracle.connect = connects
+cx_Oracle.Connection = connects
+
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 from fast_sql.utils.exception import FILEPATH_Exceptions, TYPE_Exception, MODE_Exception
 from fast_sql.fastsql.sql import to_sql as to_SQL
@@ -6,7 +21,7 @@ from fast_sql.fastsql.sql import to_csv as to_CSV
 from fast_sql.fastsql.sql import Read_sql
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 
-__version__ = '1.2.29'
+__version__ = '1.3.0'
 
 def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=True,
              index_col=None, coerce_float=True, params=None,chunksize=20000,
