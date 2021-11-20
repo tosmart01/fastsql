@@ -1,35 +1,52 @@
 import os
 import cx_Oracle
 from copy import deepcopy
+
 connect_copy = deepcopy(cx_Oracle.connect)
 
-def connects(*args,**kwargs):
+
+def connects(*args, **kwargs):
     conn = connect_copy(*args, **kwargs)
     if len(args) == 1:
         conn.external_name = args[0]
     else:
-        user = kwargs.get('user') or args[0]
-        password = kwargs.get('password') or args[1]
-        dsn = kwargs.get('dsn') or args[2]
+        user = kwargs.get("user") or args[0]
+        password = kwargs.get("password") or args[1]
+        dsn = kwargs.get("dsn") or args[2]
         conn.external_name = f"oracle+cx_oracle://{user}:{password}@{dsn}"
     return conn
+
 
 cx_Oracle.connect = connects
 cx_Oracle.Connection = connects
 
-os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
+os.environ["NLS_LANG"] = "SIMPLIFIED CHINESE_CHINA.UTF8"
 from fast_sql.utils.exception import FILEPATH_Exceptions, TYPE_Exception, MODE_Exception
 from fast_sql.fastsql.sql import to_sql as to_SQL
 from fast_sql.fastsql.sql import to_csv as to_CSV
 from fast_sql.fastsql.sql import Read_sql
-os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 
-__version__ = '1.3.2'
+os.environ["NLS_LANG"] = "SIMPLIFIED CHINESE_CHINA.UTF8"
 
-def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=True,
-             index_col=None, coerce_float=True, params=None,chunksize=20000,
-             parse_dates=None, columns=None,desc='read the scheduler'
-             ):
+__version__ = "1.4.2"
+
+
+def read_sql(
+    sql,
+    con,
+    thread_num=15,
+    encoding="utf8",
+    show_progress=True,
+    index_col=None,
+    coerce_float=True,
+    params=None,
+    chunksize=20000,
+    parse_dates=None,
+    columns=None,
+    columns_upper=True,
+    desc="read the scheduler",
+    auto_order=False,
+):
     """
     Read SQL query or database table into a DataFrame.
 
@@ -74,6 +91,10 @@ def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=True,
     columns : list, default: None
         List of column names to select from SQL table (only used when reading
         a table).
+    columns_upper : bool ,default: True
+        returns whether the data column is capitalized
+    auto_order: bool ,default: False
+        Whether  the most final result is sorted
 
     Returns
     -------
@@ -86,25 +107,30 @@ def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=True,
 
     """
 
-    assert isinstance(
-        thread_num, int), TYPE_Exception(
-        'thread_num', value='int')
-    assert isinstance(sql, str), TYPE_Exception('sql', value='str')
-    assert isinstance(
-        show_progress, bool), TYPE_Exception(
-        'show_progress', value='bool')
+    assert isinstance(thread_num, int), TYPE_Exception("thread_num", value="int")
+    assert isinstance(sql, str), TYPE_Exception("sql", value="str")
+    assert isinstance(show_progress, bool), TYPE_Exception(
+        "show_progress", value="bool"
+    )
 
     Fastsql_builder = Read_sql(
         sql,
         con,
         thread_num=thread_num,
         encoding=encoding,
-        show_progress=show_progress,chunksize=chunksize,
-        desc=desc)
+        show_progress=show_progress,
+        chunksize=chunksize,
+        desc=desc,
+        columns_upper=columns_upper,
+        auto_order=auto_order,
+    )
 
     return Fastsql_builder.read_sql(
-        index_col=index_col, coerce_float=coerce_float, params=params,
-        parse_dates=parse_dates, columns=columns,
+        index_col=index_col,
+        coerce_float=coerce_float,
+        params=params,
+        parse_dates=parse_dates,
+        columns=columns,
     )
 
 
@@ -112,12 +138,12 @@ def to_csv(
     sql,
     con,
     path_or_buf=None,
-    mode='w',
-    encoding='utf8',
+    mode="w",
+    encoding="utf8",
     thread_num=15,
     show_progress=True,
     sep=",",
-    na_rep='',
+    na_rep="",
     float_format=None,
     columns=None,
     header=True,
@@ -126,13 +152,13 @@ def to_csv(
     compression=None,
     quoting=None,
     quotechar='"',
-    line_terminator='\n',
+    line_terminator="\n",
     chunksize=None,
     date_format=None,
     doublequote=True,
     escapechar=None,
-    decimal='.',
-    desc = 'write the csv'
+    decimal=".",
+    desc="write the csv",
 ):
     r"""Write DataFrame to a comma-separated values (csv) file
 
@@ -196,15 +222,15 @@ def to_csv(
         European data
 
     """
-    assert path_or_buf,MODE_Exception(name='PATH_ERROR:',value='The path_or_buf cannot be empty')
+    assert path_or_buf, MODE_Exception(
+        name="PATH_ERROR:", value="The path_or_buf cannot be empty"
+    )
 
-    assert isinstance(
-        thread_num, int), TYPE_Exception(
-        'thread_num', value='int')
-    assert isinstance(sql, str), TYPE_Exception('sql', value='str')
-    assert isinstance(
-        show_progress, bool), TYPE_Exception(
-        'show_progress', value='bool')
+    assert isinstance(thread_num, int), TYPE_Exception("thread_num", value="int")
+    assert isinstance(sql, str), TYPE_Exception("sql", value="str")
+    assert isinstance(show_progress, bool), TYPE_Exception(
+        "show_progress", value="bool"
+    )
 
     Fastsql_builder = to_CSV(
         sql,
@@ -212,7 +238,8 @@ def to_csv(
         thread_num=thread_num,
         encoding=encoding,
         show_progress=show_progress,
-        desc= desc)
+        desc=desc,
+    )
 
     return Fastsql_builder.build_csv(
         path_or_buf=path_or_buf,
@@ -238,30 +265,34 @@ def to_csv(
 
 
 def to_sql(
-        sql,
-        from_db=None,
-        to_db=None,
-        if_exists='delete',
-        to_table=None,
-        file_path=None,
-        mode='rw',
-        thread_num=15,
-        thread_w=3,
-        encoding='utf8',
-        show_progress=True,
-        to_columns=None,
-        chunksize=20000,
-        save_path=None,
-        index_col=None,
-        coerce_float=True,
-        params=None,
-        parse_dates=None,
-        columns=None,
-        delete_cache=True,
-        data_processing=None,
-        delete_sql=None,
-        desc = 'rsync the scheduler',
-        **kwargs):
+    sql,
+    from_db=None,
+    to_db=None,
+    if_exists="delete",
+    to_table=None,
+    file_path=None,
+    mode="rw",
+    thread_num=15,
+    thread_w=3,
+    encoding="utf8",
+    show_progress=True,
+    to_columns=None,
+    chunksize=20000,
+    save_path=None,
+    index_col=None,
+    coerce_float=True,
+    params=None,
+    parse_dates=None,
+    columns=None,
+    columns_upper=True,
+    delete_cache=True,
+    data_processing=None,
+    delete_sql=None,
+    desc="rsync the scheduler",
+    auto_order=False,
+    extra_param=None,
+    **kwargs,
+):
     """
     Read SQL query or database table into a DataFrame.
 
@@ -329,6 +360,12 @@ def to_sql(
     thread_num: int, default: 15
         Read the number of threads used, recommended based on memory allocation.
     encoding : str, default UTF-8
+        columns_upper : bool ,default: True
+        returns whether the data column is capitalized
+    columns_upper : bool ,default: True
+        returns whether the data column is capitalized
+    auto_order: bool ,default: False
+        Whether  the most final result is sorted
 
     Returns
     -------
@@ -341,35 +378,35 @@ def to_sql(
 
     """
 
-    assert isinstance(
-        thread_num, int), TYPE_Exception(
-        'thread_num', value='int')
-    assert isinstance(
-        show_progress, bool), TYPE_Exception(
-        'show_progress', value='bool')
+    assert isinstance(thread_num, int), TYPE_Exception("thread_num", value="int")
+    assert isinstance(show_progress, bool), TYPE_Exception(
+        "show_progress", value="bool"
+    )
 
     if to_table is not None:
-        assert isinstance(to_table, str), TYPE_Exception('to_table', value='str')
+        assert isinstance(to_table, str), TYPE_Exception("to_table", value="str")
 
-    assert isinstance(if_exists, str), TYPE_Exception('if_exists', value='str')
-    assert isinstance(
-        mode, str), TYPE_Exception(
-        'mode', value='str like w | rw | r')
-    assert if_exists in ('delete', 'append', 'other'), MODE_Exception(
-        'if_exists ERROR:', value="The if_exists must be is 'delete' or 'append' or 'other'")
+    assert isinstance(if_exists, str), TYPE_Exception("if_exists", value="str")
+    assert isinstance(mode, str), TYPE_Exception("mode", value="str like w | rw | r")
+    assert if_exists in ("delete", "append", "other"), MODE_Exception(
+        "if_exists ERROR:",
+        value="The if_exists must be is 'delete' or 'append' or 'other'",
+    )
 
     if to_columns is not None:
-        assert isinstance(
-            to_columns, list), TYPE_Exception(
-            'to_columns', value='str,None')
+        assert isinstance(to_columns, list), TYPE_Exception(
+            "to_columns", value="str,None"
+        )
 
-    if mode.lower() == 'w':
+    if mode.lower() == "w":
         assert file_path is not None, MODE_Exception(
-            'mode ERROR: ', value='if mode == w or W ,The file_path must exist')
+            "mode ERROR: ", value="if mode == w or W ,The file_path must exist"
+        )
         assert os.path.exists(file_path), FILEPATH_Exceptions(
-            'FileNotFoundError', file_path)
-    if mode.lower() in ['wr','rw','r']:
-        assert isinstance(sql, str), TYPE_Exception('sql', value='str')
+            "FileNotFoundError", file_path
+        )
+    if mode.lower() in ["wr", "rw", "r"]:
+        assert isinstance(sql, str), TYPE_Exception("sql", value="str")
 
     Fastsql_builder = to_SQL(
         sql,
@@ -377,6 +414,7 @@ def to_sql(
         to_db=to_db,
         to_table=to_table,
         to_columns=to_columns,
+        columns_upper=columns_upper,
         if_exists=if_exists,
         thread_num=thread_num,
         encoding=encoding,
@@ -387,12 +425,18 @@ def to_sql(
         file_path=file_path,
         save_path=save_path,
         thread_w=thread_w,
-        data_processing= data_processing,
-        delete_sql = delete_sql,
-        desc = desc,
-        **kwargs)
+        data_processing=data_processing,
+        delete_sql=delete_sql,
+        desc=desc,
+        auto_order=auto_order,
+        extra_param=extra_param,
+        **kwargs,
+    )
 
     return Fastsql_builder.rsync_db(
-        index_col=index_col, coerce_float=coerce_float, params=params,
-        parse_dates=parse_dates, columns=columns,
+        index_col=index_col,
+        coerce_float=coerce_float,
+        params=params,
+        parse_dates=parse_dates,
+        columns=columns,
     )
