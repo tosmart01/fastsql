@@ -149,6 +149,8 @@ class Sqlalchemy_Pool(DB_Pool):
         con = self.db_pool
         return con
 
+    def dispose(self):
+        self.db_pool.dispose()
 
 def collection_error(fun):
     def hander(*args, **kwargs):

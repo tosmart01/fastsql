@@ -28,7 +28,7 @@ from fast_sql.fastsql.sql import Read_sql
 
 os.environ["NLS_LANG"] = "SIMPLIFIED CHINESE_CHINA.UTF8"
 
-__version__ = "1.4.2"
+__version__ = "1.4.3"
 
 
 def read_sql(

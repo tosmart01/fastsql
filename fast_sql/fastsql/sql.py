@@ -458,3 +458,4 @@ class to_sql(Read_sql):
             if self.tqdm_w is not None:
                 self.tqdm_w.update(self.task_count - self.tqdm_w.n)
         sys.stdout.flush()
+        self.db_pool.dispose()
