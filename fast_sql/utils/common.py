@@ -152,6 +152,7 @@ class Sqlalchemy_Pool(DB_Pool):
     def dispose(self):
         self.db_pool.dispose()
 
+
 def collection_error(fun):
     def hander(*args, **kwargs):
         try:
