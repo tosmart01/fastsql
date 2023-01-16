@@ -19,9 +19,9 @@ cx_Oracle.Connection = connects
 
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 from fast_sql.utils.exception import FILEPATH_Exceptions, TYPE_Exception, MODE_Exception
-from fast_sql.fastsql.sql import to_sql as to_SQL
-from fast_sql.fastsql.sql import to_csv as to_CSV
-from fast_sql.fastsql.sql import Read_sql
+from fast_sql.fastsql.sql import ToSql as to_SQL
+from fast_sql.fastsql.sql import ToCsv as to_CSV
+from fast_sql.fastsql.sql import ReadSql
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 
 __version__ = '1.3.2'
@@ -94,7 +94,7 @@ def read_sql(sql, con, thread_num=15, encoding='utf8', show_progress=True,
         show_progress, bool), TYPE_Exception(
         'show_progress', value='bool')
 
-    Fastsql_builder = Read_sql(
+    Fastsql_builder = ReadSql(
         sql,
         con,
         thread_num=thread_num,

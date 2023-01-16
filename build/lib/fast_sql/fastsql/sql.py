@@ -223,7 +223,7 @@ class to_csv(Read_sql):
         #     df_value.columns = [i.lower() for i in df_value.columns.tolist()]
         #     df_value.sort_values([i.strip() for i in self.ordering], inplace=True)
         self.kwargs.update(header=None)
-        df_value.to_csv(*self.args, mode='a', **self.kwargs,)
+        df_value.ToCsv(*self.args, mode='a', **self.kwargs, )
         self.tqdm_update()
         self.lock.release()
 
